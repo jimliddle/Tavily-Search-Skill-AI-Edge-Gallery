@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Live Info</title>
+  </head>
+  <body>
+    <script>
+      const TAVILY_SEARCH_URL = "https://api.tavily.com/search";
+      const REQUEST_TIMEOUT_MS = 20000;
+
+      function parseInput(data) {
+        if (typeof data === "string") {
+          return JSON.parse(data.trim() || "{}");
+        }
+        return data || {};
+      }
+
+      function getApiErrorMessage(body, status) {
+        const detail = body && body.detail;
+        const message =
+          (typeof detail === "string" && detail) ||
+          (detail && detail.error) ||
+          (body && body.error);
+        return message || `Tavily returned HTTP ${status}.`;
+      }
+
+      function formatResults(query, response) {
+        const results = Array.isArray(response.results) ? response.results : [];
+        const sections = [];
+
+        if (typeof response.answer === "string" && response.answer.trim()) {
+          sections.push(`Answer:\n${response.answer.trim()}`);
+        }
+
+        if (results.length) {
+          const sources = results.map((item, index) => {
+            const title = item.title || "Untitled";
+            const url = item.url || "";
+            const snippet =
+              typeof item.content === "string" && item.content.trim()
+                ? `\nSnippet: ${item.content.trim().slice(0, 600)}`
+                : "";
+            return `${index + 1}. ${title}\n${url}${snippet}`;
+          });
+          sections.push(`Sources:\n\n${sources.join("\n\n")}`);
+        }
+
+        if (!sections.length) {
+          return `No live web results found for: ${query}`;
+        }
+
+        return sections.join("\n\n");
+      }
+
+      // AI Edge Gallery calls this exact global. The API key arrives separately
+      // from model-visible data through Gallery's secure secret prompt.
+      window["ai_edge_gallery_get_result"] = async (data, secret) => {
+        let timeoutId;
+
+        try {
+          const payload = parseInput(data);
+          const query = typeof payload.query === "string" ? payload.query.trim() : "";
+          const apiKey = typeof secret === "string" ? secret.trim() : "";
+
+          if (!query) {
+            return JSON.stringify({ error: "A non-empty search query is required." });
+          }
+          if (!apiKey) {
+            return JSON.stringify({
+              error: "A Tavily API key is required. Add it in this skill's secret settings and try again.",
+            });
+          }
+
+          const controller = new AbortController();
+          timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
+          const response = await fetch(TAVILY_SEARCH_URL, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${apiKey}`,
+            },
+            body: JSON.stringify({
+              query,
+              search_depth: "basic",
+              include_answer: "basic",
+              max_results: 5,
+            }),
+            signal: controller.signal,
+          });
+
+          if (!response.ok) {
+            let errorBody = null;
+            try {
+              errorBody = await response.json();
+            } catch (_) {
+              // Keep the status-based fallback when Tavily returns a non-JSON error.
+            }
+            return JSON.stringify({
+              error: getApiErrorMessage(errorBody, response.status),
+            });
+          }
+
+          const searchResponse = await response.json();
+          return JSON.stringify({ result: formatResults(query, searchResponse) });
+        } catch (error) {
+          const message =
+            error && error.name === "AbortError"
+              ? "The Tavily search timed out. Please try again."
+              : `Tavily search failed: ${error && error.message ? error.message : String(error)}`;
+          return JSON.stringify({ error: message });
+        } finally {
+          if (timeoutId !== undefined) clearTimeout(timeoutId);
+        }
+      };
+    </script>
+  </body>
+</html>

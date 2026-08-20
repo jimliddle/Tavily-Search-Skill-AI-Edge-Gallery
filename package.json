@@ -1,0 +1,7 @@
+{
+  "name": "ai-edge-gallery-live-info-skill",
+  "private": true,
+  "scripts": {
+    "test": "node --test"
+  }
+}
