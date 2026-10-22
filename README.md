@@ -83,7 +83,7 @@ The skills-only system prompt explicitly says:
 
 If no relevant skill is found, output "No relevant skills found" and stop.
 
-The skills-plus-MCP prompt has an equivalent stop CONDITION, So, when the model decides your search skill isn’t RELEVANT to answering the question, the app tells it to stop instead of answering normally.
+The skills-plus-MCP prompt has an equivalent stop condition, So, when the model decides your search skill isn’t relevant to answering the question, the app tells it to stop instead of answering normally.
 
 To resolve the part of the agents system prompt that specifies this. 
 
