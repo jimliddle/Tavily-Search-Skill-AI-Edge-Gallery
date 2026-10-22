@@ -76,3 +76,21 @@ Current AI Edge Gallery releases require:
 - a real web host, such as GitHub Pages, for URL-based JavaScript skills.
 
 This repository now follows those requirements.
+
+##Edge Skills System prompt
+
+The skills-only system prompt explicitly says:
+
+If no relevant skill is found, output "No relevant skills found" and stop.
+
+The skills-plus-MCP prompt has an equivalent stop CONDITION, So, when the model decides your search skill isn’t RELEVANT to answering the question, the app tells it to stop instead of answering normally.
+
+To resolve the part of the agents system prompt that specifies this. 
+
+From:
+
+If no relevant skill is found, output "No relevant skills found" and stop
+
+To:
+
+If no relevant skill or tool is needed, answer the user directly using your own knowledge and reasoning. Use the appropriate skill or tool when the request requires current or external information.
