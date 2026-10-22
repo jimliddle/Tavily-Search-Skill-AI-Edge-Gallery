@@ -77,7 +77,7 @@ Current AI Edge Gallery releases require:
 
 This repository now follows those requirements.
 
-##Edge Skills System prompt
+## Edge Skills System prompt
 
 The skills-only system prompt explicitly says:
 
